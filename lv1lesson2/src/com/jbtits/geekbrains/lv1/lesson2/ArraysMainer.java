@@ -20,6 +20,30 @@ public class ArraysMainer {
         taskSeven(new int[] {1, 2, 3, 4, 5}, -10);
         taskSeven(new int[] {1, 2, 3, 4, 5}, 3);
         taskSeven(new int[] {1, 2, 3, 4, 5}, -3);
+        taskSevenCyclic(new int[] {1, 2, 3}, 11);
+        taskSevenCyclic(new int[] {1, 2, 3}, -1);
+        taskSevenCyclic(new int[] {}, 10);
+        taskSevenCyclic(new int[] {1}, 10);
+        taskSevenCyclic(new int[] {1, 2, 3, 4, 5, 6}, 0);
+        taskSevenCyclic(new int[] {1, 2, 3, 4, 5, 6}, 1);
+        taskSevenCyclic(new int[] {1, 2, 3, 4, 5, 6}, 2);
+        taskSevenCyclic(new int[] {1, 2, 3, 4, 5, 6}, 3);
+        taskSevenCyclic(new int[] {1, 2, 3, 4, 5, 6}, 4);
+        taskSevenCyclic(new int[] {1, 2, 3, 4, 5, 6}, 5);
+        taskSevenCyclic(new int[] {1, 2, 3, 4, 5, 6}, 6);
+        taskSevenCyclic(new int[] {1, 2, 3, 4, 5, 6, 7}, 0);
+        taskSevenCyclic(new int[] {1, 2, 3, 4, 5, 6, 7}, -1);
+        taskSevenCyclic(new int[] {1, 2, 3, 4, 5, 6, 7}, -2);
+        taskSevenCyclic(new int[] {1, 2, 3, 4, 5, 6, 7}, -3);
+        taskSevenCyclic(new int[] {1, 2, 3, 4, 5, 6, 7}, -4);
+        taskSevenCyclic(new int[] {1, 2, 3, 4, 5, 6, 7}, -5);
+        taskSevenCyclic(new int[] {1, 2, 3, 4, 5, 6, 7}, -6);
+        taskSevenCyclic(new int[] {1, 2, 3, 4, 5, 6, 7}, -7);
+    }
+
+    private static void taskSevenCyclic(int[] someArray, int offset) {
+        cyclicMove(someArray, offset);
+        printIntArray(someArray);
     }
 
     private static void taskSeven(int[] someArray, int offset) {
@@ -187,6 +211,25 @@ public class ArraysMainer {
                 arr[i - offset] = arr[i];
             } else if (i >= arr.length) {
                 arr[i - offset] = 0;
+            }
+        }
+    }
+
+    private static void cyclicMove(int[] arr, int offset) {
+        if (arr.length == 0) {
+            return;
+        }
+        offset = offset % arr.length;
+        if (offset < 0) {
+            offset = offset + arr.length;
+        }
+        for (int i = 0; i < offset; i++) {
+            int currentValue = arr[0];
+            for (int j = 0; j < arr.length; j++) {
+                final int next = (j + 1) % arr.length;
+                final int nextValue = arr[next];
+                arr[next] = currentValue;
+                currentValue = nextValue;
             }
         }
     }
