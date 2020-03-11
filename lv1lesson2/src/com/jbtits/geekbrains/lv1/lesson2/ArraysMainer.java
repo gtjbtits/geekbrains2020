@@ -18,8 +18,8 @@ public class ArraysMainer {
         taskSix(new int[] {10, 1, 2, 3, 4});
         taskSeven(new int[] {1, 2, 3, 4, 5}, 10);
         taskSeven(new int[] {1, 2, 3, 4, 5}, -10);
-        taskSeven(new int[] {1, 2, 3, 4, 5}, 3);
-        taskSeven(new int[] {1, 2, 3, 4, 5}, -3);
+        taskSeven(new int[] {1, 2, 3, 4, 5}, 1);
+        taskSeven(new int[] {1, 2, 3, 4, 5}, -4);
         taskSevenCyclic(new int[] {1, 2, 3}, 11);
         taskSevenCyclic(new int[] {1, 2, 3}, -1);
         taskSevenCyclic(new int[] {}, 10);
@@ -57,7 +57,7 @@ public class ArraysMainer {
     }
 
     private static void taskFive() {
-        printIntMatrix(createIdentityMatrix(2));
+        printIntMatrix(createDiagonalMatrix(7));
     }
 
     private static void taskFour() {
@@ -98,23 +98,19 @@ public class ArraysMainer {
 
     private static void invertBinaryArray(int[] arr) {
         for (int i = 0; i < arr.length; i++) {
-            switch (arr[i]) {
-                case 1:
-                    arr[i] = 0;
-                    break;
-                case 0:
-                    arr[i] = 1;
-                    break;
-                default:
-                    throw new IllegalArgumentException("Not a binary array, cause element at pos " + i + " is "
-                            + arr[i]);
+            if (arr[i] == 1) {
+                arr[i] = 0;
+            } else if (arr[i] == 0) {
+                arr[i] = 1;
+            } else {
+                throw new IllegalArgumentException("Not a binary array, cause element at pos " + i + " is " + arr[i]);
             }
         }
     }
 
     private static void fillArrayWithCommonDifferenceOfTree(int[] arr) {
-        for (int pos = 0, val = 1; pos < arr.length; pos++, val += 3) {
-            arr[pos] = val;
+        for (int i = 0; i < arr.length; i++) {
+            arr[i] = 1 + 3 * i;
         }
     }
 
@@ -146,10 +142,11 @@ public class ArraysMainer {
         return min;
     }
 
-    private static int[][] createIdentityMatrix(int size) {
+    private static int[][] createDiagonalMatrix(int size) {
         final int[][] matrix = new int[size][size];
         for (int i = 0; i < size; i++) {
             matrix[i][i] = 1;
+            matrix[i][(size - 1) - i] = 1;
         }
         return matrix;
     }
@@ -173,44 +170,24 @@ public class ArraysMainer {
     }
 
     private static void move(int[] arr, int offset) {
-        if (offset >= 0) {
-            moveRight(arr, offset);
+        int start;
+        int direction;
+        if (offset > 0) {
+            direction = -1;
+            start = arr.length - 2;
+            offset = Math.min(offset, arr.length);
         } else {
-            moveLeft(arr, -offset);
+            direction = 1;
+            start = 1;
+            offset = Math.max(offset, -arr.length);
         }
-    }
-
-    private static void moveRight(int[] arr, int offset) {
-        if (offset < 0) {
-            throw new IllegalArgumentException("Offset must be equals or greater than zero");
-        }
-        int start = arr.length - 2;
-        if (offset > arr.length) {
-            offset = arr.length;
-            start = -1;
-        }
-        for (int i = start; i + offset >= 0; i--) {
-            if (i >= 0 && i + offset < arr.length) {
+        for (int i = start; offset > 0 && i + offset >= 0
+                || offset <= 0 && i + offset < arr.length; i += direction) {
+            if (i >= 0 && i < arr.length
+                    && (offset > 0 && i + offset < arr.length || offset <= 0 && i + offset >= 0)) {
                 arr[i + offset] = arr[i];
-            } else if (i < 0) {
+            } else if (i < 0 || i >= arr.length) {
                 arr[i + offset] = 0;
-            }
-        }
-    }
-
-    private static void moveLeft(int[] arr, int offset) {
-        if (offset < 0) {
-            throw new IllegalArgumentException("Offset must be equals or greater than zero");
-        }
-        int start = 1;
-        if (offset > arr.length) {
-            offset = start = arr.length;
-        }
-        for (int i = start; i < arr.length + offset; i++) {
-            if (i < arr.length && i - offset >= 0) {
-                arr[i - offset] = arr[i];
-            } else if (i >= arr.length) {
-                arr[i - offset] = 0;
             }
         }
     }
