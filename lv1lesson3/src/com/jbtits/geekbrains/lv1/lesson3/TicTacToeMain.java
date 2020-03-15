@@ -72,9 +72,39 @@ public class TicTacToeMain {
     }
 
     private static boolean checkWinConditionsForPlayer(char cellSign) {
-        return checkfieldForAnyHorizontalWinSequence(cellSign)
-                || checkFieldForAnyVerticalWinSequence(cellSign)
-                || checkFieldForAnyDigonalWinSequence(cellSign);
+        for (int i = 0; i < FIELD_SIZE_Y; i++) {
+            for (int j = 0; j < FIELD_SIZE_X; j++) {
+                if (checkForWinSequenceAt(j, i, 1, 0, cellSign)
+                        || checkForWinSequenceAt(j, i, 0, 1, cellSign)
+                        || checkForWinSequenceAt(j, i, 1, 1, cellSign)
+                        || checkForWinSequenceAt(j, i, -1, 1, cellSign)
+                ) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static boolean checkForWinSequenceAt(int x, int y, int stepX, int stepY, char cellSign) {
+        if (field[y][x] != cellSign) {
+            return false;
+        }
+        int toGo = WIN_SEQUENCE_COUNT - 1;
+        for (int i = y + stepY, j = x + stepX;
+                i >= 0 && j >= 0
+                        && i < Math.min(FIELD_SIZE_Y, y + WIN_SEQUENCE_COUNT)
+                        && j < Math.min(FIELD_SIZE_X, x + WIN_SEQUENCE_COUNT);
+                i += stepY, j += stepX) {
+            if (field[i][j] == cellSign) {
+                if (--toGo == 0) {
+                    return true;
+                }
+            } else {
+                break;
+            }
+        }
+        return false;
     }
 
     private static Optional<int[]> searchForWinMove(char cellSign) {
@@ -92,75 +122,6 @@ public class TicTacToeMain {
             }
         }
         return Optional.empty();
-    }
-
-
-    private static boolean checkfieldForAnyHorizontalWinSequence(char cellSign) {
-
-        for (int y = 0; y < FIELD_SIZE_Y; y++) {
-            int toGo = WIN_SEQUENCE_COUNT;
-            for (int x = 0; x < FIELD_SIZE_X; x++) {
-                if (field[y][x] == cellSign) {
-                    toGo--;
-                } else {
-                    toGo = WIN_SEQUENCE_COUNT;
-                }
-                if (toGo == 0) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    private static boolean checkFieldForAnyVerticalWinSequence(char cellSign) {
-        for (int x = 0; x < FIELD_SIZE_X; x++) {
-            int toGo = WIN_SEQUENCE_COUNT;
-            for (int y = 0; y < FIELD_SIZE_Y; y++) {
-                if (field[y][x] == cellSign) {
-                    toGo--;
-                } else {
-                    toGo = WIN_SEQUENCE_COUNT;
-                }
-                if (toGo == 0) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    private static boolean checkFieldForAnyDigonalWinSequence(char cellSign) {
-        for (int y = 0; y < FIELD_SIZE_Y; y++) {
-            for (int x = 0; x < FIELD_SIZE_X; x++) {
-                if (field[y][x] != cellSign) {
-                    continue;
-                }
-                int toGo = WIN_SEQUENCE_COUNT;
-                for (int yy = y, xx = x; yy < FIELD_SIZE_Y && xx < FIELD_SIZE_X; yy++, xx++) {
-                    if (field[yy][xx] == cellSign) {
-                        toGo--;
-                    } else {
-                        break;
-                    }
-                    if (toGo == 0) {
-                        return true;
-                    }
-                }
-                toGo = WIN_SEQUENCE_COUNT;
-                for (int yy = y, xx = x; yy < FIELD_SIZE_Y && xx >= 0; yy++, xx--) {
-                    if (field[yy][xx] == cellSign) {
-                        toGo--;
-                    } else {
-                        break;
-                    }
-                    if (toGo == 0) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
     }
 
     private static boolean isInvalidCell(int x, int y) {
