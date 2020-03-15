@@ -1,13 +1,11 @@
 package com.jbtits.geekbrains.lv1.lesson4.domain;
 
-import java.util.function.Function;
+import com.jbtits.geekbrains.lv1.lesson4.utils.Employees;
 
 /**
  * @author Nikolay Zaytsev
  */
 public class Employee {
-
-    private static volatile long lastAssignedId;
 
     private final long id;
     private String lastName;
@@ -16,7 +14,7 @@ public class Employee {
     private String position;
 
     public Employee(String lastName, int salary, int age, String position) {
-        this.id = assignNewId();
+        this.id = Employees.assignNewId();
         this.lastName = lastName;
         this.salary = salary;
         this.age = age;
@@ -41,38 +39,6 @@ public class Employee {
 
     public String getPosition() {
         return position;
-    }
-
-    synchronized private static long assignNewId() {
-        return ++lastAssignedId;
-    }
-
-    public static void respectElders(Employee[] employees) {
-        for (Employee employee : employees) {
-            if (employee.getAge() >= 45) {
-                final int currentSalary = employee.getSalary();
-                employee.setSalary(currentSalary + 5_000);
-            }
-        }
-    }
-
-    private static int average(Employee[] employees, Function<Employee, Integer> getter) {
-        if (employees.length == 0) {
-            return 0;
-        }
-        int summary = 0;
-        for (Employee employee: employees) {
-            summary += getter.apply(employee);
-        }
-        return summary / employees.length;
-    }
-
-    public static int averageSalary(Employee[] employees) {
-        return average(employees, Employee::getSalary);
-    }
-
-    public static int averageAge(Employee[] employees) {
-        return average(employees, Employee::getAge);
     }
 
     @Override

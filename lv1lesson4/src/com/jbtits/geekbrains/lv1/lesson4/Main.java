@@ -1,6 +1,7 @@
 package com.jbtits.geekbrains.lv1.lesson4;
 
 import com.jbtits.geekbrains.lv1.lesson4.domain.Employee;
+import com.jbtits.geekbrains.lv1.lesson4.utils.Employees;
 
 /**
  * @author Nikolay Zaytsev
@@ -16,15 +17,15 @@ public class Main {
     }
 
     private static void taskSevenAverageCalculating(Employee[] employees) {
-        System.out.printf("Average salary is %d", Employee.averageSalary(employees));
+        System.out.printf("Average salary is %d", Employees.averageSalary(employees));
         System.out.println();
-        System.out.printf("Average age is %d", Employee.averageAge(employees));
+        System.out.printf("Average age is %d", Employees.averageAge(employees));
         System.out.println();
         System.out.println();
     }
 
     private static void taskSixRespectAllEldersEmployees(Employee[] employees) {
-        Employee.respectElders(employees);
+        Employees.respectElders(employees);
         for (Employee employee: employees) {
             System.out.println(employee);
         }
