@@ -1,11 +1,8 @@
 package com.jbtits.geekbrains.lv1.lesson3;
 
-import java.util.Optional;
 import java.util.Random;
 import java.util.Scanner;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
+import java.util.function.*;
 
 /**
  * @author Nikolay Zaytsev
@@ -75,10 +72,10 @@ public class TicTacToeMain {
     private static boolean checkWinConditionsForPlayer(char cellSign) {
         for (int i = 0; i < FIELD_SIZE_Y; i++) {
             for (int j = 0; j < FIELD_SIZE_X; j++) {
-                if (checkForSequenceFromPoint(j, i, 1, 0, WIN_SEQUENCE_COUNT, cellSign)
-                        || checkForSequenceFromPoint(j, i, 0, 1, WIN_SEQUENCE_COUNT, cellSign)
-                        || checkForSequenceFromPoint(j, i, 1, 1, WIN_SEQUENCE_COUNT, cellSign)
-                        || checkForSequenceFromPoint(j, i, -1, 1, WIN_SEQUENCE_COUNT, cellSign)
+                if (searchForSequenceFromPoint(j, i, 1, 0, WIN_SEQUENCE_COUNT, cellSign) == 0
+                        || searchForSequenceFromPoint(j, i, 0, 1, WIN_SEQUENCE_COUNT, cellSign) == 0
+                        || searchForSequenceFromPoint(j, i, 1, 1, WIN_SEQUENCE_COUNT, cellSign) == 0
+                        || searchForSequenceFromPoint(j, i, -1, 1, WIN_SEQUENCE_COUNT, cellSign) == 0
                 ) {
                     return true;
                 }
@@ -87,72 +84,103 @@ public class TicTacToeMain {
         return false;
     }
 
-    private static boolean checkForSequenceFromPoint(int x, int y, int stepX, int stepY, int length, char cellSign) {
-        if (field[y][x] != cellSign) {
-            return false;
+    private static int searchForSequenceFromPoint(int x, int y, int stepX, int stepY, int length, char cellSign) {
+        if (field[y][x] != cellSign
+                || (stepX == 0 && stepY == 0)
+                || (stepX < 0 && x - (length - 1) < 0)
+                || (stepX > 0 && x + length > FIELD_SIZE_X)
+                || (stepY < 0 && y - (length - 1) < 0)
+                || (stepY > 0 && y + length > FIELD_SIZE_Y)) {
+            return length;
         }
         int toGo = length - 1;
         for (int i = y + stepY, j = x + stepX;
-                i >= 0 && j >= 0
-                        && i < Math.min(FIELD_SIZE_Y, y + length)
-                        && j < Math.min(FIELD_SIZE_X, x + length);
+                i >= 0 && j >= 0 && i < y + length && j < x + length;
                 i += stepY, j += stepX) {
             if (field[i][j] == cellSign) {
-                if (--toGo == 0) {
-                    return true;
-                }
-            } else {
+                --toGo;
+            } else if (field[i][j] != CELL_EMPTY) {
                 break;
             }
         }
-        return false;
+        return toGo;
     }
 
-    private static Optional<int[]> searchForMove(char cellSign, Predicate<Cell> moveCondition) {
+    private static int[] searchForBestMove(char cellSign) {
+        int bestMovesToWin;
+        int movesToWin;
+        bestMovesToWin = WIN_SEQUENCE_COUNT;
+        final int[] bestMoveCoords = generateInvalidCell();
         for (int y = 0; y < FIELD_SIZE_Y; y++) {
             for (int x = 0; x < FIELD_SIZE_X; x++) {
                 if (isInvalidCell(x, y)) {
                     continue;
                 }
                 field[y][x] = cellSign;
-                boolean success = moveCondition.test(new Cell(cellSign, x, y));
+                movesToWin = calculateMovesToWin(cellSign, x, y);
+                if (movesToWin < bestMovesToWin) {
+                    bestMovesToWin = movesToWin;
+                    bestMoveCoords[0] = x;
+                    bestMoveCoords[1] = y;
+                }
+                field[y][x] = CELL_EMPTY;
+            }
+        }
+        return bestMoveCoords;
+    }
+
+    private static int calculateMovesToWin(char cellSign, int x, int y) {
+        if (x > 0) {
+            if (field[y][x - 1] == cellSign) {
+                return calculateMovesToWin(cellSign, x - 1, y);
+            }
+            if (y > 0 && field[y - 1][x - 1] == cellSign) {
+                return calculateMovesToWin(cellSign, x - 1, y - 1);
+            }
+        }
+        if (y > 0) {
+            if (field[y - 1][x] == cellSign) {
+                return calculateMovesToWin(cellSign, x, y - 1);
+            }
+            if (x < FIELD_SIZE_X - 1 && field[y - 1][x + 1] == cellSign) {
+                return calculateMovesToWin(cellSign, x + 1, y - 1);
+            }
+        }
+        return Math.min(
+                Math.min(
+                        searchForSequenceFromPoint(x, y, 1, 0, WIN_SEQUENCE_COUNT, cellSign),
+                        searchForSequenceFromPoint(x, y, 0, 1, WIN_SEQUENCE_COUNT, cellSign)
+                ),
+                Math.min(
+                        searchForSequenceFromPoint(x, y, 1, 1, WIN_SEQUENCE_COUNT, cellSign),
+                        searchForSequenceFromPoint(x, y, -1, 1, WIN_SEQUENCE_COUNT, cellSign)
+                )
+        );
+    }
+
+    private static int[] searchForWinMove(char cellSign) {
+        for (int y = 0; y < FIELD_SIZE_Y; y++) {
+            for (int x = 0; x < FIELD_SIZE_X; x++) {
+                if (isInvalidCell(x, y)) {
+                    continue;
+                }
+                field[y][x] = cellSign;
+                boolean success = checkWinConditionsForPlayer(cellSign);
                 field[y][x] = CELL_EMPTY;
                 if (success) {
-                    return Optional.of(new int[] {x, y});
+                    return new int[] {x, y};
                 }
             }
         }
-        return Optional.empty();
+        return generateInvalidCell();
     }
 
-    private static Optional<int[]> searchForWinMove(char cellSign) {
-        return searchForMove(cellSign, cell -> checkWinConditionsForPlayer(cell.sign));
+    private static int[] generateInvalidCell() {
+        return new int[] {-1, -1};
     }
 
-    private static Optional<int[]> searchForBestMove(char cellSign) {
-        Predicate<Cell> condition = cell -> {
-            for (int length = WIN_SEQUENCE_COUNT - 1; length > 1; length--) {
-                if (checkForSequenceFromPoint(cell.x, cell.y, 1, 0, length, cell.sign)
-                        || checkForSequenceFromPoint(cell.x, cell.y, -1, 0, length, cell.sign)
-                        || checkForSequenceFromPoint(cell.x, cell.y, 0, 1, length, cell.sign)
-                        || checkForSequenceFromPoint(cell.x, cell.y, 0, -1, length, cell.sign)
-                        || checkForSequenceFromPoint(cell.x, cell.y, 1, 1, length, cell.sign)
-                        || checkForSequenceFromPoint(cell.x, cell.y, -1, -1, length, cell.sign)
-                        || checkForSequenceFromPoint(cell.x, cell.y, -1, 1, length, cell.sign)
-                        || checkForSequenceFromPoint(cell.x, cell.y, 1, -1, length, cell.sign)) {
-                    System.out.format("[+] Best move for '%c'-player is x=%d y=%d. Sequence length is %d", cell.sign,
-                            cell.x, cell.y, length);
-                    System.out.println();
-                    return true;
-                }
-            }
-            System.out.format("[-] Can't find best move for '%c'-player. Cell x=%d y=%d. Randomize?", cell.sign, cell.x,
-                    cell.y);
-            System.out.println();
-            return false;
-        };
-
-        return searchForMove(cellSign, condition);
+    private static boolean isInvalidCell(int[] coordinates) {
+        return isInvalidCell(coordinates[0], coordinates[1]);
     }
 
     private static boolean isInvalidCell(int x, int y) {
@@ -194,18 +222,23 @@ public class TicTacToeMain {
     private static int[] aiRandomInput() {
         final int x = random.nextInt(FIELD_SIZE_X);
         final int y = random.nextInt(FIELD_SIZE_Y);
-        return new int[] {x, y};
+        return isInvalidCell(x, y) ? aiRandomInput() : new int[] {x, y};
     }
 
     private static int[] aiInput() {
-        return Stream.of(
-                searchForWinMove(AI_SIGN),
-                searchForWinMove(HUMAN_SIGN),
-                searchForBestMove(AI_SIGN)
-        ).filter(Optional::isPresent)
-                .map(Optional::get)
-                .findFirst()
-                .orElseGet(TicTacToeMain::aiRandomInput);
+        final int[] winMoveAICell = searchForWinMove(AI_SIGN);
+        if (!isInvalidCell(winMoveAICell)) {
+            return winMoveAICell;
+        }
+        final int[] breakHumanWinCell = searchForWinMove(HUMAN_SIGN);
+        if (!isInvalidCell(breakHumanWinCell)) {
+            return breakHumanWinCell;
+        }
+        final int[] bestMoveCell = searchForBestMove(AI_SIGN);
+        if (!isInvalidCell(bestMoveCell)) {
+            return bestMoveCell;
+        }
+        return aiRandomInput();
     }
 
     private static void printField() {
@@ -219,18 +252,5 @@ public class TicTacToeMain {
             System.out.print("-");
         }
         System.out.println();
-    }
-    
-    private static class Cell {
-        
-        private final char sign;
-        private final int x;
-        private final int y;
-        
-        private Cell(char sign, int x, int y) {
-            this.sign = sign;
-            this.x = x;
-            this.y = y;
-        }
     }
 }
