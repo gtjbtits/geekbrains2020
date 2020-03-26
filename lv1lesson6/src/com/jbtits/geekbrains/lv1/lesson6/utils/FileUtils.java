@@ -2,7 +2,8 @@ package com.jbtits.geekbrains.lv1.lesson6.utils;
 
 import java.io.*;
 import java.util.Objects;
-import java.util.Scanner;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Утилитный класс для работы с файлами
@@ -13,14 +14,13 @@ public class FileUtils {
 
     public static final char NEW_LINE = '\n';
 
-    private static final String EMPTY_STRING = "";
-
     private FileUtils() {}
 
     /**
      * Объединяет несколько файлов в один входной поток.
      *
-     * Ответственность за закрытие объединенного вводного потока лежит на вызывающем коде. Закрытие производится методом {@link MultiInputStream#close()}
+     * Ответственность за закрытие объединенного вводного потока лежит на вызывающем коде. Закрытие производится
+     * методом {@link MultiInputStream#close()}
      *
      * @param separatorByte Разделительный байт, вставляемый между контентом склеиваемых файлов
      * @param files Множество имен файлов для склейки
@@ -30,25 +30,32 @@ public class FileUtils {
         return new MultiInputStream(separatorByte, files);
     }
 
-    public static void mergeFiles(File target, int separatorByte, File ... sources) throws FileNotFoundException {
-        final FileOutputStream outputStream = new FileOutputStream(target);
-        final PrintStream printStream = new PrintStream(outputStream);
-        final Scanner scanner = new Scanner(mergeFiles(separatorByte, sources));
-        while (scanner.hasNextLine()) {
-            printStream.println(scanner.nextLine());
+    public static void mergeFiles(File target, int separatorByte, File ... sources) throws IOException {
+        try (final FileOutputStream outputStream = new FileOutputStream(target);
+                final InputStream inputStream = mergeFiles(separatorByte, sources)) {
+            int read;
+            while ((read = inputStream.read()) >= 0) {
+                outputStream.write(read);
+            }
+        } catch (IOException e) {
+            throw new IOException(e);
         }
-        scanner.close();
-        printStream.close();
     }
 
-    public static boolean directorySearch(File dir, String needle) throws FileNotFoundException {
+    public static boolean directorySearch(File dir, String needle) throws IOException {
         if (!dir.exists() || !dir.isDirectory()) {
             throw new FileNotFoundException("Can't open directory "  + dir.getAbsolutePath());
         }
-        return search(mergeFiles(NEW_LINE, dir.listFiles()), needle);
+        if (dir.listFiles() == null) {
+            return false;
+        }
+        final File[] filesInDirectory = Stream.of(dir.listFiles())
+                .filter(File::isFile)
+                .toArray(File[]::new);
+        return search(mergeFiles(NEW_LINE, filesInDirectory), needle);
     }
 
-    public static boolean fileSearch(File file, String needle) throws FileNotFoundException {
+    public static boolean fileSearch(File file, String needle) throws IOException {
         if (!file.exists() || !file.isFile()) {
             throw new FileNotFoundException("Can't open file "  + file.getAbsolutePath());
         }
@@ -63,31 +70,33 @@ public class FileUtils {
      * @param needle Слово
      * @return true, если слово удалось найти в файле
      */
-    private static boolean search(InputStream inputStream, String needle) {
-        final Scanner scanner = new Scanner(inputStream);
-        while (scanner.hasNext()) {
-            final String word = extractWord(scanner.next());
-            if (needle.equals(word)) {
-                scanner.close();
-                return true;
-            }
+    private static boolean search(InputStream inputStream, String needle) throws IOException {
+        if (needle == null || needle.isEmpty()) {
+            throw new IllegalArgumentException("Needle must be non empty string");
         }
-        scanner.close();
+        final byte[] bytes = needle.getBytes();
+        int index = 0;
+        try {
+            int read;
+            while ((read = inputStream.read()) >= 0) {
+                if (read == bytes[index]) {
+                    index++;
+                } else if (read == bytes[0]) {
+                    index = 1;
+                    continue;
+                } else {
+                    index = 0;
+                }
+                if (index == bytes.length) {
+                    return true;
+                }
+            }
+        } catch (IOException e) {
+            throw new IOException(e);
+        } finally {
+            inputStream.close();
+        }
         return false;
-    }
-
-    private static String extractWord(String token) {
-        final char[] word = new char[token.length()];
-        int pos = 0;
-        for (int i = 0; i < token.length(); i++) {
-            final char letter = token.charAt(i);
-            if (letter >= 'A' && letter <= 'Z' || letter >= 'a' && letter <= 'z') {
-                word[pos++] = letter;
-            } else {
-                return EMPTY_STRING;
-            }
-        }
-        return new String(word, 0, pos);
     }
 
     private static class MultiInputStream extends InputStream {
@@ -133,6 +142,11 @@ public class FileUtils {
                     return separatorByte;
                 }
             }
+        }
+
+        @Override
+        public int read(byte[] b, int off, int len) throws IOException {
+            throw new UnsupportedOperationException("Not realized. Please, use read()");
         }
 
         @Override

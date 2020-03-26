@@ -27,7 +27,7 @@ public class FailFacilityMail {
             System.out.printf("Searching for '%s' in directory %s files. Result is %b", needle, dir.getPath(),
                     FileUtils.directorySearch(dir, needle));
             System.out.println();
-        } catch (FileNotFoundException e) {
+        } catch (IOException e) {
             throw new RuntimeException("Unable to read searching directory files content", e);
         }
     }
@@ -37,7 +37,7 @@ public class FailFacilityMail {
             System.out.printf("Searching for '%s' in file %s. Result is %b", needle, file.getPath(),
                     FileUtils.fileSearch(file, needle));
             System.out.println();
-        } catch (FileNotFoundException e) {
+        } catch (IOException e) {
             throw new RuntimeException("Unable to read searching file content", e);
         }
     }
@@ -45,8 +45,8 @@ public class FailFacilityMail {
     private static void mergeFiles(File target, File ... sources) {
         try {
             FileUtils.mergeFiles(target, FileUtils.NEW_LINE, sources);
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException("Can't open target file", e);
+        } catch (IOException e) {
+            throw new RuntimeException("Can't merge files", e);
         }
     }
 }
