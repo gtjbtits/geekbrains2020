@@ -4,13 +4,11 @@ import com.jbtits.geekbrains.lv2.lesson1.gui.core.FrameRender;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 
 /**
  * @author Nikolay Zaytsev
  */
-public class CirclesCanvas extends JPanel implements MouseListener {
+public class CirclesCanvas extends JPanel {
 
     public static final int DELAY_MS_BETWEEN_FRAMES = 16;
 
@@ -19,7 +17,6 @@ public class CirclesCanvas extends JPanel implements MouseListener {
 
     CirclesCanvas(FrameRender render) {
         this.render = render;
-        this.addMouseListener(this);
     }
 
     @Override
@@ -50,30 +47,5 @@ public class CirclesCanvas extends JPanel implements MouseListener {
             Thread.currentThread().interrupt();
             throw new RuntimeException(e);
         }
-    }
-
-    @Override
-    public void mouseClicked(MouseEvent e) {
-        // no-op
-    }
-
-    @Override
-    public void mousePressed(MouseEvent e) {
-        render.handleMousePressedEvent(this, e);
-    }
-
-    @Override
-    public void mouseReleased(MouseEvent e) {
-        // no-op
-    }
-
-    @Override
-    public void mouseEntered(MouseEvent e) {
-        // no-op
-    }
-
-    @Override
-    public void mouseExited(MouseEvent e) {
-        // no-op
     }
 }

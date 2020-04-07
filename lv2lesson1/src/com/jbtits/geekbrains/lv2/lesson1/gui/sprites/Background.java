@@ -8,8 +8,9 @@ import java.awt.*;
  */
 public class Background extends Sprite {
 
-    public static final int COLOR_CHANGE_SPEED = 100;
+    public static final int HALF_COLOR_AMPLITUDE = 100;
     private Color color;
+    private float time;
 
     public Background() {
         super(0, 0, 0, 0, false);
@@ -30,9 +31,10 @@ public class Background extends Sprite {
     }
 
     private Color changeColor(float timeDelay) {
-        final int r = (this.color.getRed() + (int) (timeDelay * COLOR_CHANGE_SPEED)) & 0xFF;
-        final int g = (this.color.getGreen() + (int) (timeDelay * COLOR_CHANGE_SPEED)) & 0xFF;
-        final int b = (this.color.getBlue() + (int) (timeDelay * COLOR_CHANGE_SPEED)) & 0xFF;
+        this.time += timeDelay;
+        final int r = (int) ((Math.sin(time * .5) + 1) * HALF_COLOR_AMPLITUDE);
+        final int g = (int) ((Math.sin(time * .25) + 1) * HALF_COLOR_AMPLITUDE);
+        final int b = (int) ((Math.sin(time * .15) + 1) * HALF_COLOR_AMPLITUDE);
         return new Color(r, g, b);
     }
 }

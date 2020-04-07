@@ -4,7 +4,6 @@ import com.jbtits.geekbrains.lv2.lesson1.gui.sprites.Sprite;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.MouseEvent;
 
 /**
  * @author Nikolay Zaytsev
@@ -16,8 +15,6 @@ public abstract class FrameRender extends JFrame { // NOSONAR
     protected FrameRender(Sprite[] sprites) {
         this.sprites = new SpritesCollection(sprites);
     }
-
-    public abstract void handleMousePressedEvent(JPanel canvas, MouseEvent event);
 
     /**
      * Подготовить новый кадр для отображения

@@ -19,19 +19,23 @@ public class SpritesCollection {
     }
 
     public void add(Sprite sprite) {
+        if (Objects.isNull(sprite)) {
+            throw new IllegalArgumentException("Trying to add null element. No sense");
+        }
         moveCursor();
         container[cursor++] = sprite;
     }
 
     public void remove(Sprite sprite) {
+        if (Objects.isNull(sprite)) {
+            throw new IllegalArgumentException("Trying to remove null element. No sense");
+        }
         int pos = getPosition(sprite);
         if (pos < 0) {
-            throw new IllegalArgumentException("Sprite " + sprite + " isn't belongs to current collection");
+            throw new IllegalArgumentException("Can't find sprite " + sprite + " in this collection");
         }
-        if (Objects.nonNull(sprite)) {
-            container[pos] = null;
-            cursor = pos;
-        }
+        container[pos] = null;
+        cursor = pos;
     }
 
     private void moveCursor() {
