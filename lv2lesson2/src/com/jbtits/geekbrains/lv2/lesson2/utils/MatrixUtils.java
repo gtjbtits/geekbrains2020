@@ -25,7 +25,7 @@ public class MatrixUtils {
         if (Objects.isNull(matrixString) || size < 1) {
             throw new IllegalArgumentException("Null matrix string or incorrect size");
         }
-        final String[][] matrix = new String[size][size];
+        final String[][] matrix = new String[size][];
         final String[] rows = BrandNewStringUtils.split(matrixString, size, '\n');
         for (int i = 0; i < rows.length; i++) {
             final String[] values = BrandNewStringUtils.split(rows[i], size, ' ');
