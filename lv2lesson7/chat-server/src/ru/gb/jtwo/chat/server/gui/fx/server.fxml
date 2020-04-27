@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<GridPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="ru.gb.jtwo.chat.server.gui.fx.Controller"
+            alignment="center">
+    <Button fx:id="btnStart" text="Start" onAction="#start"
+            GridPane.columnIndex="0" GridPane.hgrow="ALWAYS" maxWidth="Infinity"/>
+    <Button fx:id="btnStop" text="Stop" onAction="#stop"
+            GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" maxWidth="Infinity"/>
+    <Button fx:id="btnDrop" text="Drop all" onAction="#drop"
+            GridPane.columnIndex="2" GridPane.hgrow="ALWAYS" maxWidth="Infinity"/>
+    <TextArea fx:id="taLog" GridPane.rowIndex="1"
+              GridPane.columnSpan="3" GridPane.vgrow="ALWAYS"/>
+
+</GridPane>
