@@ -1,6 +1,9 @@
 package ru.gb.jtwo.chat.client;
 
+import ru.gb.jtwo.chat.client.log.MessageLog;
+import ru.gb.jtwo.chat.client.log.impl.FileMessageLog;
 import ru.gb.jtwo.chat.common.Library;
+import ru.gb.jtwo.chat.common.messages.BroadcastMessage;
 import ru.gb.jtwo.network.SocketThread;
 import ru.gb.jtwo.network.SocketThreadListener;
 
@@ -8,18 +11,16 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.net.Socket;
-import java.text.SimpleDateFormat;
-import java.time.Instant;
-import java.util.Date;
 
 public class ClientGUI extends JFrame implements ActionListener, Thread.UncaughtExceptionHandler, SocketThreadListener {
 
     private static final int WIDTH = 400;
     private static final int HEIGHT = 300;
+    private static final int MESSAGES_HISTORY_LIMIT = 100;
 
+    private final MessageLog history = new FileMessageLog();
     private final JTextArea log = new JTextArea();
     private final JPanel panelTop = new JPanel(new GridLayout(2, 3));
     private final JTextField tfIPAddress = new JTextField("127.0.0.1");
@@ -118,20 +119,6 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
         tfMessage.setText(null);
         tfMessage.requestFocusInWindow();
         socketThread.sendMessage(msg);
-        //putLog(String.format("%s: %s", username, msg));
-        //wrtMsgToLogFile(msg, username);
-    }
-
-    private void wrtMsgToLogFile(String msg, String username) {
-        try (FileWriter out = new FileWriter("log.txt", true)) {
-            out.write(username + ": " + msg + System.lineSeparator());
-            out.flush();
-        } catch (IOException e) {
-            if (!shownIoErrors) {
-                shownIoErrors = true;
-                showException(Thread.currentThread(), e);
-            }
-        }
     }
 
     private void putLog(String msg) {
@@ -170,19 +157,18 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
 
     @Override
     public void onSocketStart(SocketThread thread, Socket socket) {
-        putLog("Start");
+        // no-op
     }
 
     @Override
     public void onSocketStop(SocketThread thread) {
-        putLog("Stop");
+        putLog("\nDisconnected\n");
         panelBottom.setVisible(false);
         panelTop.setVisible(true);
     }
 
     @Override
     public void onSocketReady(SocketThread thread, Socket socket) {
-        putLog("Ready");
         panelBottom.setVisible(true);
         panelTop.setVisible(false);
         String login = tfLogin.getText();
@@ -199,14 +185,16 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
         final String command = Library.getCommand(msg);
         switch (command) {
             case Library.TYPE_BROADCAST:
-                final String[] parameters = Library.getParameters(msg);
-                final String formattedDateTime = formatDate(parameters[0]);
-                final String from = parameters[1];
-                final String textMessage = parameters[2];
-                putLog(String.format("%s %s:%n%s", formattedDateTime, from, textMessage));
+                final BroadcastMessage message = BroadcastMessage.fromRawMessage(msg);
+                history.insert(message);
+                putLog(message.toString());
                 break;
             case Library.AUTH_ACCEPT:
-                // no-op
+                putLog("\nAuthorization success\n");
+                final BroadcastMessage[] storedMessages = history.read(MESSAGES_HISTORY_LIMIT);
+                for (BroadcastMessage storeMessage: storedMessages) {
+                    putLog(storeMessage.toString());
+                }
                 break;
             case Library.AUTH_DENIED:
                 showException(Thread.currentThread(), new RuntimeException("Authorization denied"));
@@ -217,12 +205,6 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
             default:
                 showException(Thread.currentThread(), new RuntimeException("No handler for message: " + msg));
         }
-    }
-
-    public String formatDate(String parameter) {
-        final long timestamp = Long.parseLong(parameter);
-        final Date date = Date.from(Instant.ofEpochMilli(timestamp));
-        return new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(date);
     }
 
     @Override
