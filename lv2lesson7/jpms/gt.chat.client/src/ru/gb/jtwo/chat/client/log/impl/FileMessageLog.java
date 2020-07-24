@@ -1,6 +1,5 @@
 package ru.gb.jtwo.chat.client.log.impl;
 
-import org.omg.CORBA.Object;
 import ru.gb.jtwo.chat.client.log.MessageLog;
 import ru.gb.jtwo.chat.common.messages.BroadcastMessage;
 
