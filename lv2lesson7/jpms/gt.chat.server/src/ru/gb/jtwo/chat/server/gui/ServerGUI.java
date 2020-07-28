@@ -22,12 +22,7 @@ public class ServerGUI extends JFrame implements ActionListener, Thread.Uncaught
     private final JTextArea log = new JTextArea();
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() { // Event Dispatching Thread
-                new ServerGUI();
-            }
-        });
+        SwingUtilities.invokeLater(ServerGUI::new);
     }
 
     private ServerGUI() {
@@ -57,7 +52,6 @@ public class ServerGUI extends JFrame implements ActionListener, Thread.Uncaught
         if (src == btnStart) {
             chatServer.start(8189);
         } else if (src == btnStop) {
-//            throw new RuntimeException("Hello from EDT");
             chatServer.stop();
         } else {
             throw new RuntimeException("Unknown source: " + src);
@@ -69,7 +63,7 @@ public class ServerGUI extends JFrame implements ActionListener, Thread.Uncaught
         e.printStackTrace();
         String msg;
         StackTraceElement[] ste = e.getStackTrace();
-        msg = String.format("Exception in \"%s\" %s: %s\n\tat %s",
+        msg = String.format("Exception in \"%s\" %s: %s%n\tat %s",
                 t.getName(), e.getClass().getCanonicalName(), e.getMessage(), ste[0]);
         JOptionPane.showMessageDialog(this, msg, "Exception", JOptionPane.ERROR_MESSAGE);
         System.exit(1);

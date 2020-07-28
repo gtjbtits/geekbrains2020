@@ -40,12 +40,7 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
     private SocketThread socketThread;
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                new ClientGUI();
-            }
-        });
+        SwingUtilities.invokeLater(ClientGUI::new);
     }
 
     ClientGUI() {
@@ -114,31 +109,26 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
 
     private void sendMessage() {
         String msg = tfMessage.getText();
-        String username = tfLogin.getText();
         if ("".equals(msg)) return;
         tfMessage.setText(null);
         tfMessage.requestFocusInWindow();
-        socketThread.sendMessage(msg);
+        socketThread.sendMessage(Library.getBroadcastClient(msg));
     }
 
     private void putLog(String msg) {
         if ("".equals(msg)) return;
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                log.append(msg + System.lineSeparator());
-                log.setCaretPosition(log.getDocument().getLength());
-            }
+        SwingUtilities.invokeLater(() -> {
+            log.append(msg + System.lineSeparator());
+            log.setCaretPosition(log.getDocument().getLength());
         });
     }
 
     private void showException(Thread t, Throwable e) {
+        e.printStackTrace();
         String msg;
         StackTraceElement[] ste = e.getStackTrace();
-        if (ste.length == 0)
-            msg = "Empty Stacktrace";
-        else {
-            msg = String.format("Exception in \"%s\" %s: %s\n\tat %s",
+        if (ste.length > 0) {
+            msg = String.format("Exception in \"%s\" %s: %s%n\tat %s",
                     t.getName(), e.getClass().getCanonicalName(), e.getMessage(), ste[0]);
             JOptionPane.showMessageDialog(this, msg, "Exception", JOptionPane.ERROR_MESSAGE);
         }
@@ -146,7 +136,6 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
 
     @Override
     public void uncaughtException(Thread t, Throwable e) {
-        e.printStackTrace();
         showException(t, e);
         System.exit(1);
     }
@@ -184,7 +173,7 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
     private void handleMessage(String msg) {
         final String command = Library.getCommand(msg);
         switch (command) {
-            case Library.TYPE_BROADCAST:
+            case Library.BROADCAST_SERVER:
                 final BroadcastMessage message = BroadcastMessage.fromRawMessage(msg);
                 history.insert(message);
                 putLog(message.toString());
@@ -209,6 +198,6 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
 
     @Override
     public void onSocketException(SocketThread thread, Throwable throwable) {
-        showException(thread, throwable);
+        throwable.printStackTrace();
     }
 }

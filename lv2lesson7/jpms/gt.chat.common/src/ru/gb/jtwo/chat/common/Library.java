@@ -19,9 +19,8 @@ public class Library {
     public static final String AUTH_ACCEPT = "/auth_accept";
     public static final String AUTH_DENIED = "/auth_denied";
     public static final String MSG_FORMAT_ERROR = "/msg_format_error";
-    // если мы вдруг не поняли, что за сообщение и не смогли разобрать
-    public static final String TYPE_BROADCAST = "/bcast";
-    // то есть сообщение, которое будет посылаться всем
+    public static final String BROADCAST_CLIENT = "/bcast_client";
+    public static final String BROADCAST_SERVER = "/bcast_server";
 
     public static String getAuthRequest(String login, String password) {
         return AUTH_REQUEST + DELIMITER + login + DELIMITER + password;
@@ -39,9 +38,13 @@ public class Library {
         return MSG_FORMAT_ERROR + DELIMITER + message;
     }
 
-    public static String getTypeBroadcast(String src, String message) {
-        return TYPE_BROADCAST + DELIMITER + System.currentTimeMillis() +
+    public static String getBroadcastServer(String src, String message) {
+        return BROADCAST_SERVER + DELIMITER + System.currentTimeMillis() +
                 DELIMITER + src + DELIMITER + message;
+    }
+
+    public static String getBroadcastClient(String message) {
+        return BROADCAST_CLIENT + DELIMITER + message;
     }
 
     public static String getCommand(String message) {

@@ -101,11 +101,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
 
     @Override
     public void onReceiveString(SocketThread thread, Socket socket, String msg) {
-        ClientThread client = (ClientThread) thread;
-        if (client.isAuthorized()) {
-            handleAuthMessage(client, msg);
-        } else
-            handleNonAuthMessage(client, msg);
+        handleMessage((ClientThread) thread, msg);
     }
 
     @Override
@@ -113,18 +109,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
         throwable.printStackTrace();
     }
 
-    void handleAuthMessage(ClientThread client, String msg) {
-        sendToAllAuthorizedClients(Library.getTypeBroadcast(client.getNickname(), msg));
-    }
-
-    void handleNonAuthMessage(ClientThread client, String msg) {
-        String[] arr = msg.split(Library.DELIMITER);
-        if (arr.length != 3 || !arr[0].equals(Library.AUTH_REQUEST)) {
-            client.msgFormatError(msg);
-            return;
-        }
-        String login = arr[1];
-        String password = arr[2];
+    void handleAuthRequest(ClientThread client, String login, String password) {
         String nickname = SqlClient.getNickname(login, password);
         if (nickname == null) {
             putLog("Invalid login attempt: " + login);
@@ -132,17 +117,45 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
             return;
         }
         client.authAccept(nickname);
-        sendToAllAuthorizedClients(Library.getTypeBroadcast("Server", nickname + " connected"));
+        sendToAllAuthorizedClients(Library.getBroadcastServer("Server", nickname + " connected"));
     }
 
-    private void sendToAllAuthorizedClients(String msg) {
-        for (int i = 0; i < clients.size(); i++) {
-            ClientThread client = (ClientThread) clients.get(i);
-            if (!client.isAuthorized()) continue;
-            client.sendMessage(msg);
+    void handleMessage(ClientThread client, String msg) {
+        final String command = Library.getCommand(msg);
+        final String[] params = Library.getParameters(msg);
+        switch (command) {
+            case Library.AUTH_REQUEST:
+                if (params.length != 2) {
+                    putLog("Invalid auth request: " + msg);
+                    client.authFail();
+                    return;
+                }
+                handleAuthRequest(client, params[0], params[1]);
+                break;
+            case Library.BROADCAST_CLIENT:
+                if (params.length != 1) {
+                    putLog("Invalid bcast request: " + msg);
+                    client.authFail();
+                    return;
+                }
+                if (!client.isAuthorized()) {
+                    putLog("Forbidden: bcast messages available only for authorized users");
+                    client.authFail();
+                    return;
+                }
+                sendToAllAuthorizedClients(Library.getBroadcastServer(client.getNickname(), params[0]));
+                break;
+            default:
+                putLog("Unknown message: " + msg);
+                client.authFail();
         }
     }
 
-    public void dropAllClients() {
+    private void sendToAllAuthorizedClients(String msg) {
+        for (SocketThread socketThread : clients) {
+            ClientThread client = (ClientThread) socketThread;
+            if (!client.isAuthorized()) continue;
+            client.sendMessage(msg);
+        }
     }
 }

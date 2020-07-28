@@ -8,7 +8,7 @@ import java.util.Objects;
 
 public class FileMessageLog implements MessageLog {
 
-    public static final String LOG_FILE_NAME = "client.log";
+    public static final String LOG_FILE_NAME = "lv2lesson7/jpms/gt.chat.client/client.bin.log";
     public static final char SEPARATOR = '\0';
     public static final int SEPARATOR_LENGTH = 4;
     final File logFile;
