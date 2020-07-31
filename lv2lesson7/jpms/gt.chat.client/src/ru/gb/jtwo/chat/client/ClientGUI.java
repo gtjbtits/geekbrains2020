@@ -3,7 +3,8 @@ package ru.gb.jtwo.chat.client;
 import ru.gb.jtwo.chat.client.log.MessageLog;
 import ru.gb.jtwo.chat.client.log.impl.FileMessageLog;
 import ru.gb.jtwo.chat.common.Library;
-import ru.gb.jtwo.chat.common.messages.BroadcastMessage;
+import ru.gb.jtwo.chat.common.messages.BroadcastServerMessage;
+import ru.gb.jtwo.chat.common.messages.base.CommandWithParameters;
 import ru.gb.jtwo.network.SocketThread;
 import ru.gb.jtwo.network.SocketThreadListener;
 
@@ -19,6 +20,7 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
     private static final int WIDTH = 400;
     private static final int HEIGHT = 300;
     private static final int MESSAGES_HISTORY_LIMIT = 100;
+    private static final String MANUAL_CHAT_INPUT_COMMAND_DELIMITER = " ";
 
     private final MessageLog history = new FileMessageLog();
     private final JTextArea log = new JTextArea();
@@ -112,7 +114,10 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
         if ("".equals(msg)) return;
         tfMessage.setText(null);
         tfMessage.requestFocusInWindow();
-        socketThread.sendMessage(Library.getBroadcastClient(msg));
+        Library.parse(msg, MANUAL_CHAT_INPUT_COMMAND_DELIMITER).ifPresentOrElse(
+                command -> socketThread.sendMessage(command.toCommandString()),
+                () -> socketThread.sendMessage(Library.getBroadcastClient(msg))
+        );
     }
 
     private void putLog(String msg) {
@@ -171,28 +176,37 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
     }
 
     private void handleMessage(String msg) {
-        final String command = Library.getCommand(msg);
-        switch (command) {
-            case Library.BROADCAST_SERVER:
-                final BroadcastMessage message = BroadcastMessage.fromRawMessage(msg);
+        Library.parse(msg).ifPresentOrElse(
+                this::handleCommand,
+                () -> showException(Thread.currentThread(),
+                        new RuntimeException("Can't extract command from server message " + msg))
+        );
+
+    }
+
+    private void handleCommand(CommandWithParameters command) {
+        switch (command.getCommand()) {
+            case BROADCAST_SERVER:
+                final BroadcastServerMessage message = BroadcastServerMessage
+                        .constructWithParams(command.getParams());
                 history.insert(message);
-                putLog(message.toString());
+                putLog(message.toPrettyString());
                 break;
-            case Library.AUTH_ACCEPT:
+            case AUTH_ACCEPT:
                 putLog("\nAuthorization success\n");
-                final BroadcastMessage[] storedMessages = history.read(MESSAGES_HISTORY_LIMIT);
-                for (BroadcastMessage storeMessage: storedMessages) {
-                    putLog(storeMessage.toString());
+                final BroadcastServerMessage[] storedMessages = history.read(MESSAGES_HISTORY_LIMIT);
+                for (BroadcastServerMessage storeMessage: storedMessages) {
+                    putLog(storeMessage.toPrettyString());
                 }
                 break;
-            case Library.AUTH_DENIED:
+            case AUTH_DENIED:
                 showException(Thread.currentThread(), new RuntimeException("Authorization denied"));
                 break;
-            case Library.MSG_FORMAT_ERROR:
-                showException(Thread.currentThread(), new RuntimeException("Server declined our message: " + msg));
+            case MSG_FORMAT_ERROR:
+                showException(Thread.currentThread(), new RuntimeException("Server declined our command: " + command));
                 break;
             default:
-                showException(Thread.currentThread(), new RuntimeException("No handler for message: " + msg));
+                showException(Thread.currentThread(), new RuntimeException("No handler for command: " + command));
         }
     }
 

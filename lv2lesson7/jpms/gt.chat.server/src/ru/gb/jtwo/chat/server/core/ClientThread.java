@@ -8,8 +8,9 @@ import java.net.Socket;
 
 public class ClientThread extends SocketThread {
 
+    private String login;
+
     private String nickname;
-    private boolean isAuthorized;
 
     public ClientThread(SocketThreadListener listener, String name, Socket socket) {
         super(listener, name, socket);
@@ -19,12 +20,20 @@ public class ClientThread extends SocketThread {
         return nickname;
     }
 
-    public boolean isAuthorized() {
-        return isAuthorized;
+    public String getLogin() {
+        return this.login;
     }
 
-    public void authAccept(String nickname) {
-        isAuthorized = true;
+    public void changeNickname(String nickname) {
+        this.nickname = nickname;
+    }
+
+    public boolean isAuthorized() {
+        return this.login != null;
+    }
+
+    public void authAccept(String login, String nickname) {
+        this.login = login;
         this.nickname = nickname;
         sendMessage(Library.getAuthAccept(nickname));
     }

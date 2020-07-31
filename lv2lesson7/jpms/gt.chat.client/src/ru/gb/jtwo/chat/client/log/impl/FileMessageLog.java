@@ -1,14 +1,15 @@
 package ru.gb.jtwo.chat.client.log.impl;
 
 import ru.gb.jtwo.chat.client.log.MessageLog;
-import ru.gb.jtwo.chat.common.messages.BroadcastMessage;
+import ru.gb.jtwo.chat.common.Library;
+import ru.gb.jtwo.chat.common.messages.BroadcastServerMessage;
+import ru.gb.jtwo.chat.common.messages.base.CommandWithParameters;
 
 import java.io.*;
-import java.util.Objects;
 
 public class FileMessageLog implements MessageLog {
 
-    public static final String LOG_FILE_NAME = "lv2lesson7/jpms/gt.chat.client/client.bin.log";
+    public static final String LOG_FILE_NAME = "lv2lesson7/jpms/gt.chat.client/client.log.bin";
     public static final char SEPARATOR = '\0';
     public static final int SEPARATOR_LENGTH = 4;
     final File logFile;
@@ -23,9 +24,9 @@ public class FileMessageLog implements MessageLog {
     }
 
     @Override
-    public void insert(BroadcastMessage message) {
+    public void insert(BroadcastServerMessage message) {
         try (final OutputStream out = new FileOutputStream(logFile, true)) {
-            final String outString = getSeparator() + message.getRawMessage();
+            final String outString = getSeparator() + message.toCommandString();
             out.write(outString.getBytes());
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -41,11 +42,11 @@ public class FileMessageLog implements MessageLog {
     }
 
     @Override
-    public BroadcastMessage[] read(int limit) {
+    public BroadcastServerMessage[] read(int limit) {
         if (limit < 1) {
             throw new IllegalArgumentException("Parameter limit must be > 0");
         }
-        final BroadcastMessage[] messages = new BroadcastMessage[limit];
+        final BroadcastServerMessage[] messages = new BroadcastServerMessage[limit];
         int messageIdx = 0;
         try (final RandomAccessFile file = new RandomAccessFile(logFile, "r")) {
             final long fileLength = logFile.length();
@@ -58,7 +59,8 @@ public class FileMessageLog implements MessageLog {
                 if (readByte == (byte) SEPARATOR) {
                     if (++readSeparators == SEPARATOR_LENGTH) {
                         final byte[] reversed = reverse(readBytes.toByteArray());
-                        messages[messageIdx++] = BroadcastMessage.fromRawMessage(new String(reversed));
+                        final CommandWithParameters command = Library.parse(new String(reversed)).orElseThrow();
+                        messages[messageIdx++] = BroadcastServerMessage.constructWithParams(command.getParams());
                         if (messageIdx == limit) {
                             return reverse(messages);
                         }
@@ -71,15 +73,16 @@ public class FileMessageLog implements MessageLog {
             }
 
             if (readBytes.size() > 0) {
-                messages[messageIdx++] = BroadcastMessage.fromRawMessage(new String(readBytes.toByteArray()));
+                final CommandWithParameters command = Library.parse(new String(readBytes.toByteArray())).orElseThrow();
+                messages[messageIdx++] = BroadcastServerMessage.constructWithParams(command.getParams());
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
         if (messageIdx == 0) {
-            return new BroadcastMessage[] {};
+            return new BroadcastServerMessage[] {};
         }
-        final BroadcastMessage[] readMessages = new BroadcastMessage[messageIdx];
+        final BroadcastServerMessage[] readMessages = new BroadcastServerMessage[messageIdx];
         System.arraycopy(messages, 0, readMessages, 0, messageIdx);
         return reverse(readMessages);
     }
@@ -92,8 +95,8 @@ public class FileMessageLog implements MessageLog {
         return reversed;
     }
 
-    private BroadcastMessage[] reverse(BroadcastMessage[] array) {
-        final BroadcastMessage[] reversed = new BroadcastMessage[array.length];
+    private BroadcastServerMessage[] reverse(BroadcastServerMessage[] array) {
+        final BroadcastServerMessage[] reversed = new BroadcastServerMessage[array.length];
         for (int i = 0; i < array.length; i++) {
             reversed[array.length - 1 - i] = array[i];
         }

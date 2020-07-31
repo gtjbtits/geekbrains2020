@@ -1,6 +1,10 @@
 package ru.gb.jtwo.chat.server.core;
 
 import ru.gb.jtwo.chat.common.Library;
+import ru.gb.jtwo.chat.common.messages.AuthRequestMessage;
+import ru.gb.jtwo.chat.common.messages.BroadcastClientMessage;
+import ru.gb.jtwo.chat.common.messages.ChangeNicknameMessage;
+import ru.gb.jtwo.chat.common.messages.base.CommandWithParameters;
 import ru.gb.jtwo.network.ServerSocketThread;
 import ru.gb.jtwo.network.ServerSocketThreadListener;
 import ru.gb.jtwo.network.SocketThread;
@@ -109,45 +113,61 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
         throwable.printStackTrace();
     }
 
-    void handleAuthRequest(ClientThread client, String login, String password) {
-        String nickname = SqlClient.getNickname(login, password);
+    void handleAuthRequest(ClientThread client, AuthRequestMessage authRequestMessage) {
+        String nickname = SqlClient.getNickname(authRequestMessage.getUsername(), authRequestMessage.getPassword());
         if (nickname == null) {
-            putLog("Invalid login attempt: " + login);
+            putLog("Invalid login attempt: " + authRequestMessage.getUsername());
             client.authFail();
             return;
         }
-        client.authAccept(nickname);
-        sendToAllAuthorizedClients(Library.getBroadcastServer("Server", nickname + " connected"));
+        client.authAccept(authRequestMessage.getUsername(), nickname);
+        sendToAllAuthorizedClients(Library.getBroadcastServer(nickname + " connected"));
     }
 
-    void handleMessage(ClientThread client, String msg) {
-        final String command = Library.getCommand(msg);
-        final String[] params = Library.getParameters(msg);
-        switch (command) {
-            case Library.AUTH_REQUEST:
-                if (params.length != 2) {
-                    putLog("Invalid auth request: " + msg);
-                    client.authFail();
-                    return;
-                }
-                handleAuthRequest(client, params[0], params[1]);
+    void handleChangeNickname(ClientThread client, ChangeNicknameMessage changeNicknameMessage) {
+        if (!SqlClient.changeNickname(client.getLogin(), changeNicknameMessage.getNickname())) {
+            putLog("Nickname was not updated");
+            client.authFail();
+            return;
+        }
+        sendToAllAuthorizedClients(Library.getBroadcastServer(client.getNickname() + " changed nickname to "
+                + changeNicknameMessage.getNickname()));
+        client.changeNickname(changeNicknameMessage.getNickname());
+    }
+
+    private void handleMessage(ClientThread client, String msg) {
+        Library.parse(msg).ifPresentOrElse(command -> {
+            try {
+                handleCommand(client, command);
+            } catch (RuntimeException e) {
+                putLog("Can't extract command from message " + msg);
+                client.msgFormatError(msg);
+            }
+        }, () -> client.msgFormatError(msg));
+    }
+
+    private void handleCommand(ClientThread client, CommandWithParameters command) {
+        switch (command.getCommand()) {
+            case AUTH_REQUEST:
+                handleAuthRequest(client, AuthRequestMessage.constructWithParams(command.getParams()));
                 break;
-            case Library.BROADCAST_CLIENT:
-                if (params.length != 1) {
-                    putLog("Invalid bcast request: " + msg);
-                    client.authFail();
-                    return;
-                }
+            case BROADCAST_CLIENT:
+                final BroadcastClientMessage broadcastClientMessage = BroadcastClientMessage
+                        .constructWithParams(command.getParams());
                 if (!client.isAuthorized()) {
                     putLog("Forbidden: bcast messages available only for authorized users");
                     client.authFail();
                     return;
                 }
-                sendToAllAuthorizedClients(Library.getBroadcastServer(client.getNickname(), params[0]));
+                sendToAllAuthorizedClients(Library.getBroadcastServer(client.getNickname(),
+                        broadcastClientMessage.getMessageText()));
+                break;
+            case CHANGE_NICKNAME:
+                handleChangeNickname(client, ChangeNicknameMessage.constructWithParams(command.getParams()));
                 break;
             default:
-                putLog("Unknown message: " + msg);
-                client.authFail();
+                putLog("Unknown command: " + command.getCommand());
+                client.msgFormatError(command.getCommand().toString());
         }
     }
 
