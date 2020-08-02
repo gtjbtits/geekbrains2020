@@ -32,4 +32,23 @@ public class ArrayUtils {
         System.arraycopy(arr, copyStart + 1, part, 0, copyLength);
         return part;
     }
+
+    public static boolean hasOneAndFour(int[] arr) {
+        if (arr == null) {
+            throw new IllegalArgumentException("Array can't be null");
+        }
+        boolean hasOne = false;
+        boolean hasFour = false;
+        for (final int value : arr) {
+            if (value == 1) {
+                hasOne = true;
+            } else if (value == 4) {
+                hasFour = true;
+            }
+            if (hasOne && hasFour) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
