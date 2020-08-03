@@ -16,7 +16,6 @@ public class SocketThread extends Thread {
         super(name);
         this.socket = socket;
         this.listener = listener;
-        start();
     }
 
     @Override

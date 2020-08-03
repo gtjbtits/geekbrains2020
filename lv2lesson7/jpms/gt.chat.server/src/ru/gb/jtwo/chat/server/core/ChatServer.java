@@ -13,22 +13,29 @@ import ru.gb.jtwo.network.SocketThreadListener;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Vector;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class ChatServer implements ServerSocketThreadListener, SocketThreadListener {
 
-    ServerSocketThread server;
-    ChatServerListener listener;
-    Vector<SocketThread> clients = new Vector<>();
+    public static final int MAX_CLIENTS_COUNT = 10;
+    private ServerSocketThread server;
+    private ChatServerListener listener;
+    private Vector<SocketThread> clients = new Vector<>();
+    private ExecutorService chatClientExecutorService = Executors.newFixedThreadPool(MAX_CLIENTS_COUNT);
 
     public ChatServer(ChatServerListener listener) {
         this.listener = listener;
     }
 
     public void start(int port) {
-        if (server != null && server.isAlive())
+        if (server != null && server.isAlive()) {
             putLog("Already running");
-        else
+        } else {
             server = new ServerSocketThread(this, "Server", port, 2000);
+            server.start();
+        }
     }
 
     public void stop() {
@@ -67,7 +74,16 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     public void onSocketAccepted(ServerSocketThread thread, ServerSocket server, Socket socket) {
         putLog("Client connected");
         String name = "SocketThread " + socket.getInetAddress() + ":" + socket.getPort();
-        new ClientThread(this, name, socket);
+        try {
+            chatClientExecutorService.submit(new ClientThread(this, name, socket)).get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            putLog("Client connection process interrupted");
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            putLog("Can't handle client connection: clients thread pool rejects task");
+            e.printStackTrace();
+        }
     }
 
     @Override

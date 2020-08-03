@@ -104,6 +104,7 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
         try {
             Socket socket = new Socket(tfIPAddress.getText(), Integer.parseInt(tfPort.getText()));
             socketThread = new SocketThread(this, "Client", socket);
+            socketThread.start();
         } catch (IOException e) {
             showException(Thread.currentThread(), e);
         }
@@ -167,6 +168,7 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
         panelTop.setVisible(false);
         String login = tfLogin.getText();
         String password = new String(tfPassword.getPassword());
+        putLog("\nConnecting...\n");
         thread.sendMessage(Library.getAuthRequest(login, password));
     }
 
