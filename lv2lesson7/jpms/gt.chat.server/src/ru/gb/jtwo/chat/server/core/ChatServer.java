@@ -1,5 +1,7 @@
 package ru.gb.jtwo.chat.server.core;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.gb.jtwo.chat.common.Library;
 import ru.gb.jtwo.chat.common.messages.AuthRequestMessage;
 import ru.gb.jtwo.chat.common.messages.BroadcastClientMessage;
@@ -16,6 +18,8 @@ import java.util.Vector;
 
 public class ChatServer implements ServerSocketThreadListener, SocketThreadListener {
 
+    private final Logger log = LoggerFactory.getLogger(ChatServer.class);
+
     ServerSocketThread server;
     ChatServerListener listener;
     Vector<SocketThread> clients = new Vector<>();
@@ -25,15 +29,16 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     }
 
     public void start(int port) {
-        if (server != null && server.isAlive())
-            putLog("Already running");
-        else
+        if (server != null && server.isAlive()) {
+            log.info("Already running");
+        } else {
             server = new ServerSocketThread(this, "Server", port, 2000);
+        }
     }
 
     public void stop() {
         if (server == null || !server.isAlive()) {
-            putLog("Nothing to stop");
+            log.info("Nothing to stop");
         } else {
             server.interrupt();
         }
@@ -41,6 +46,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
 
     private void putLog(String msg) {
         listener.onChatServerMessage(msg);
+        log.info(msg);
     }
 
     /**
@@ -72,8 +78,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
 
     @Override
     public void onServerException(ServerSocketThread thread, Throwable throwable) {
-        putLog("Server exception");
-        throwable.printStackTrace();
+        log.error("Server exception", throwable);
     }
 
     @Override

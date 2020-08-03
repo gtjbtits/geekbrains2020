@@ -1,5 +1,7 @@
 package ru.gb.jtwo.chat.server.gui;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.gb.jtwo.chat.server.core.ChatServer;
 import ru.gb.jtwo.chat.server.core.ChatServerListener;
 
@@ -10,6 +12,8 @@ import java.awt.event.ActionListener;
 
 public class ServerGUI extends JFrame implements ActionListener, Thread.UncaughtExceptionHandler, ChatServerListener {
 
+    private final Logger log = LoggerFactory.getLogger(ServerGUI.class);
+
     private static final int POS_X = 800;
     private static final int POS_Y = 200;
     private static final int WIDTH = 600;
@@ -19,7 +23,7 @@ public class ServerGUI extends JFrame implements ActionListener, Thread.Uncaught
     private final JButton btnStart = new JButton("Start");
     private final JButton btnStop = new JButton("Stop");
     private final JPanel panelTop = new JPanel(new GridLayout(1, 2));
-    private final JTextArea log = new JTextArea();
+    private final JTextArea textArea = new JTextArea();
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(ServerGUI::new);
@@ -32,9 +36,9 @@ public class ServerGUI extends JFrame implements ActionListener, Thread.Uncaught
         setResizable(false);
         setTitle("Chat server");
         setAlwaysOnTop(true);
-        log.setEditable(false);
-        log.setLineWrap(true);
-        JScrollPane scrollLog = new JScrollPane(log);
+        textArea.setEditable(false);
+        textArea.setLineWrap(true);
+        JScrollPane scrollLog = new JScrollPane(textArea);
         btnStart.addActionListener(this);
         btnStop.addActionListener(this);
 
@@ -60,7 +64,7 @@ public class ServerGUI extends JFrame implements ActionListener, Thread.Uncaught
 
     @Override
     public void uncaughtException(Thread t, Throwable e) {
-        e.printStackTrace();
+        log.error(e.getMessage(), e);
         String msg;
         StackTraceElement[] ste = e.getStackTrace();
         msg = String.format("Exception in \"%s\" %s: %s%n\tat %s",
@@ -72,8 +76,8 @@ public class ServerGUI extends JFrame implements ActionListener, Thread.Uncaught
     @Override
     public void onChatServerMessage(String msg) {
         SwingUtilities.invokeLater(() -> {
-            log.append(msg + "\n");
-            log.setCaretPosition(log.getDocument().getLength());
+            textArea.append(msg + "\n");
+            textArea.setCaretPosition(textArea.getDocument().getLength());
         });
     }
 }
